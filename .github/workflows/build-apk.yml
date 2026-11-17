@@ -1,0 +1,50 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Installs the Android SDK command line tools and accepts licenses so Gradle can fetch API 35.
+      - uses: android-actions/setup-android@v3
+
+      # No gradlew in the repo yet, so use Gradle 8.9 (the minimum for Android Gradle Plugin 8.7).
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempo-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      # Run after the APK is saved so a failing test never blocks the download.
+      - name: Unit tests
+        run: gradle testDebugUnitTest --stacktrace
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            app/build/reports
+            app/build/test-results
+          if-no-files-found: ignore
