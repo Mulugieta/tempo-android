@@ -17,8 +17,10 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # Installs the Android SDK command line tools and accepts licenses so Gradle can fetch API 35.
-      - uses: android-actions/setup-android@v3
+      # The runner image already ships the Android SDK. Accept its licenses so Gradle can
+      # download the API 35 platform and build tools it needs.
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       # No gradlew in the repo yet, so use Gradle 8.9 (the minimum for Android Gradle Plugin 8.7).
       - uses: gradle/actions/setup-gradle@v4
